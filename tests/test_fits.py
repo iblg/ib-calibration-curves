@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 def test_exponential_fit():
-    p = Path() / "linear_fit_test_data.csv"
+    p = Path() / "tests" / "linear_fit_test_data.csv"
     y, dy, model = exponentialfit(p)
     result = model.params[0]
     expected = 11.93
@@ -12,7 +12,10 @@ def test_exponential_fit():
 
 
 def test_linear_fit():
-    p = Path() / "linear_fit_test_data.csv"
+    p = (
+        Path() / "tests" / "linear_fit_test_data.csv"
+    )  # the function linearfit takes a Path as the only argument
+    print(p)
     y, dy, model = linearfit(p)
     result = model.params[0]
     expected = 6.9
