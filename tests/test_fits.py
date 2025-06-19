@@ -1,6 +1,6 @@
 import unittest
 from pathlib import Path
-from calibration_curves.hplc_urea import exponentialfit, linearfit
+from ib_calibration_curves.hplc_urea import exponentialfit, linearfit
 
 
 class TestExponentialFit(unittest.TestCase):
