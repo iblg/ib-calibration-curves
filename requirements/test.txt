@@ -1,4 +1,5 @@
 flake8
+pandas
 pytest
 codecov
 coverage
