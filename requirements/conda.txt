@@ -1,5 +1,6 @@
 dill
 numpy
 matplotlib
+openpyxl
 pandas
 statsmodels
