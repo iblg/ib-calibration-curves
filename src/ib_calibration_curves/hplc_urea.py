@@ -38,7 +38,6 @@ def filter_data(
             .where(df[x] < x_range[1])
             .dropna(how="all")
         )
-
     y = y_transformation(df[y])
     X = x_transformation(df[x])
     if add_X_constant:
