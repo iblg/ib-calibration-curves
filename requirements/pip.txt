@@ -1,3 +1,5 @@
+dill
 numpy
 matplotlib
-dill
+pandas
+statsmodels
