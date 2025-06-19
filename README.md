@@ -27,7 +27,7 @@ pip install -e .
 
 > The above command will automatically install the dependencies listed in `requirements/pip.txt`.
 
-### Method 2: Install your package with dependencies sourced from conda
+### Method 2: Install your package with dependencies sourced from conda/micromamba
 
 If you haven't already, ensure you have the conda-forge channel added as the highest priority channel.
 
