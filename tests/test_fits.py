@@ -1,0 +1,19 @@
+import pytest
+from ib_calibration_curves.hplc_urea import linearfit, exponentialfit
+from pathlib import Path
+
+
+def test_exponential_fit():
+    p = Path() / "linear_fit_test_data.csv"
+    y, dy, model = exponentialfit(p)
+    result = model.params[0]
+    expected = 11.93
+    assert expected == pytest.approx(result, abs=1e-2)
+
+
+def test_linear_fit():
+    p = Path() / "linear_fit_test_data.csv"
+    y, dy, model = linearfit(p)
+    result = model.params[0]
+    expected = 6.9
+    assert expected == pytest.approx(result, abs=1e-1)
