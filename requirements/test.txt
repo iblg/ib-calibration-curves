@@ -1,4 +1,6 @@
 flake8
+openpyxl
+pandas
 pytest
 codecov
 coverage

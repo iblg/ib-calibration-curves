@@ -1,0 +1,33 @@
+import pytest
+from ib_calibration_curves.hplc_urea import (
+    linearfit,
+    exponentialfit,
+    powerlawfit,
+)
+from pathlib import Path
+
+
+def test_exponential_fit():
+    # Taylor page ~195
+    p = Path() / "tests" / "linear_fit_test_data.xlsx"
+    y, dy, model = exponentialfit(p, x="x", y="y")
+    result = model.params.iloc[1]
+    expected = 0.089
+    assert expected == pytest.approx(result, abs=1e-1)
+
+
+def test_linear_fit():
+    # Taylor page ~185
+    p = Path() / "tests" / "linear_fit_test_data.xlsx"
+    y, dy, model = linearfit(p, x="x", y="y")
+    result = model.params.iloc[0]
+    expected = 39.0
+    assert expected == pytest.approx(result, abs=1e-1)
+
+
+def test_power_law_fit():
+    p = Path() / "tests" / "power_law_fit_test_data.xlsx"
+    y, dy, model = powerlawfit(p, x="x", y="y")
+    result = model.params.iloc[1]
+    expected = 2.787
+    assert expected == pytest.approx(result, abs=1e-3)

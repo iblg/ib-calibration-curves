@@ -90,16 +90,16 @@ def generate_measurement_spreadsheet(
 
 
 def main():
-    sheet_path = Path().resolve().parent / "xanthydrol" / "measurements"
+    parent_dir = Path().resolve().parent / "xanthydrol" / "measurements"
     file_name = "2025_06_11"
     dims = ["reactor", "hose", "setting", "light", "rep"]
     common_dims = {"lamp": "UV185"}
     generate_measurement_spreadsheet(
-        sheet_path,
+        parent_dir,
         file_name,
         dims,
         common_dims,
-        make_measurement_directory=False,
+        make_measurement_directory=True,
         dilution=False,
     )
     return
