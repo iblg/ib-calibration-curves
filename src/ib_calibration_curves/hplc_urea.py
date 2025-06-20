@@ -191,7 +191,6 @@ def save_model(
 
     def save(p, obj):
         with open(p, "wb") as outfile:
-            # help(dill.dump)
             dill.dump(obj, outfile)
         return
 
@@ -227,15 +226,32 @@ def main():
     powerlaw_y, powerlaw_dy, powerlaw_model = powerlawfit(infile_path)
     exp_y, exp_dy, exponential_model = exponentialfit(infile_path)
     lin_y, lin_dy, linear_model = linearfit(infile_path)
+    lowbounds = (0, 200)
+    highbounds = (100, 100000)
     lin_low_y, lin_low_dy, linear_low_model = linearfit(
-        infile_path, x_range=(0, 200)
+        infile_path, x_range=lowbounds
     )
     lin_high_y, lin_high_dy, linear_high_model = linearfit(
-        infile_path, x_range=(100, 10000)
+        infile_path, x_range=highbounds
     )
 
     path_out_lin_low = p / "fits" / "2025_06_17_low"
-    save_model(path_out_lin_low, lin_low_y, lin_low_dy, linear_low_model)
+    save_model(
+        path_out_lin_low,
+        lin_low_y,
+        lin_low_dy,
+        linear_low_model,
+        bounds=lowbounds,
+    )
+
+    path_out_lin_high = p / "fits" / "2025_06_17_high"
+    save_model(
+        path_out_lin_high,
+        lin_high_y,
+        lin_high_dy,
+        linear_high_model,
+        bounds=highbounds,
+    )
 
     xx = "area"
     yy = "concentration"
@@ -276,7 +292,6 @@ def main():
         )
 
         ax[1].plot(x, y, "o", label="real data")
-        ax[1].plot
         ax[1].errorbar(
             x1,
             powerlaw_y(x1),
@@ -290,7 +305,7 @@ def main():
 
         plt.show()
 
-    # plot_results()
+    plot_results()
 
     return
 
