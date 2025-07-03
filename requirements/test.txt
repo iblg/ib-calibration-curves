@@ -1,9 +1,0 @@
-flake8
-numpy
-openpyxl
-pandas
-pytest
-codecov
-coverage
-pytest-cov
-pytest-env
