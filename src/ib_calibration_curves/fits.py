@@ -6,10 +6,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def generate_calibration_curve_spreadsheet():
-    pass
-
-
 def identity(x):
     return x
 

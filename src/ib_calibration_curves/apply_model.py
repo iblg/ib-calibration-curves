@@ -1,4 +1,4 @@
-from ib_calibration_curves.urea import load_model
+from ib_calibration_curves.fits import load_model
 from pathlib import Path
 import pandas as pd
 import numpy as np

@@ -1,7 +1,7 @@
 import pandas as pd
 from pathlib import Path
 from ib_calibration_curves.apply_model import apply_model
-from ib_calibration_curves.urea import load_model
+from ib_calibration_curves.fits import load_model
 
 # model_p = Path() / "tests" / "test_apply_model_files" / "test"
 # file_p = Path() / "tests" / "test_apply_model_files" / "example_data.xlsx"

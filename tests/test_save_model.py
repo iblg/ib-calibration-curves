@@ -1,5 +1,5 @@
 import pytest
-from ib_calibration_curves.urea import load_model, save_model
+from ib_calibration_curves.fits import load_model, save_model
 
 bounds = (0, 100000)
 
