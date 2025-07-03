@@ -1,5 +1,5 @@
 import pytest
-from ib_calibration_curves.urea import (
+from ib_calibration_curves.fits import (
     linearfit,
     exponentialfit,
     powerlawfit,
