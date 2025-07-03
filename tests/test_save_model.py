@@ -22,20 +22,20 @@ bounds = (0, 100000)
 #     assert pytest.raises(FileNotFoundError)
 
 
-# @pytest.mark.parametrize(
-#     "input, expected",
-#     [
-#         # C1 file already exists. expect FileExistsError
-#         (
-#             "model-dir/existing-file",
-#             (
-#                 FileExistsError,
-#                 "File: existing-file already exists. Please "
-#                 "rerun with a different name.",
-#             ),
-#         ),
-#     ],
-# )
+@pytest.mark.parametrize(
+    "input, expected",
+    [
+        # C1 file already exists. expect FileExistsError
+        (
+            "model-dir/existing-file",
+            (
+                FileExistsError,
+                "File: existing-file already exists. Please "
+                "rerun with a different name.",
+            ),
+        ),
+    ],
+)
 def test_save_model_bad(tmp_path, data_files, input, expected):
     """Should raise FileExistsError."""
     model = data_files / "test"
@@ -93,7 +93,7 @@ def test_checks_overwrite_willingness():
 
 
 def test_saves_logfile(data_files):
-    """The model should save the x bounds."""
+    "The model should save the x bounds." ""
     p = data_files / "test_apply_model_fits"
     logfile_path = p.with_suffix(".logfile")
     y, dy, model = load_model(p)
@@ -102,7 +102,7 @@ def test_saves_logfile(data_files):
 
 
 def test_saves_ybounds():
-    """The model should save the y bounds."""
+    "The model should save the y bounds." ""
     pass
 
 

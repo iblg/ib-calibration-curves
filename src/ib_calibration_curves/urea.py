@@ -27,7 +27,7 @@ def filter_data(
         df = pd.read_excel(p)
     else:
         print("Wrong data type")
-        return
+        return None
 
     if x_range is None:
         pass
@@ -145,7 +145,7 @@ def generate_log_file(fitting_function, xbounds, res):
 
 
 def linearfit(
-    p: Path,
+    path_to_data_sheet: Path,
     x="area",
     y="concentration",
     add_X_constant=True,
@@ -153,9 +153,45 @@ def linearfit(
     y_transformation=identity,
     x_transformation=identity,
 ):
-    """Log base e fit."""
+    """
+    Fit a linear function onto data.
+    Arguments:
+        path_to_data_sheet: pathlib.Path
+            The path to the data that you wish to fit
+        x: str, default "area"
+            The column name corresponding to the quantity measured
+            by the instrument
+        y: str, default "concentration"
+            The column name corresponding to the concentration
+        add_X_constant: bool, default True
+            If True, allow the fit to have a y-intercept parameter.
+            If False, restrict the fit to pass through the origin.
+        x_range: (float, float), default None
+            The range over which to restrict the fit.
+        y_transformation: function, default identity
+            The function to use to modify the data.
+            In linear fitting, the transformation should
+            be the identity.
+        x_transformation: function, default identity
+            The function to use to modify the data.
+            In linear fitting, the transformation should be
+            the identity.
+
+    Returns:
+        y_func, a python function (the function allowing you
+        to put in your areas and get concentrations)
+        dy_func, the function returning the fitting uncertainty on the data
+        res, the statsmodels results object with more
+        statistical details about the fit.
+    """
     df, X, y = filter_data(
-        p, x, y, x_range, x_transformation, y_transformation, add_X_constant
+        path_to_data_sheet,
+        x,
+        y,
+        x_range,
+        x_transformation,
+        y_transformation,
+        add_X_constant,
     )
 
     model = sm.OLS(y, X)
