@@ -1,0 +1,9 @@
+flake8
+openpyxl
+pandas
+pytest
+codecov
+coverage
+pytest-cov
+pytest-env
+qt6
