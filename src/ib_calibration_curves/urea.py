@@ -27,7 +27,7 @@ def filter_data(
         df = pd.read_excel(p)
     else:
         print("Wrong data type")
-        return
+        return None
 
     if x_range is None:
         pass
@@ -38,7 +38,6 @@ def filter_data(
             .where(df[x] < x_range[1])
             .dropna(how="all")
         )
-
     y = y_transformation(df[y])
     X = x_transformation(df[x])
     if add_X_constant:
@@ -146,7 +145,7 @@ def generate_log_file(fitting_function, xbounds, res):
 
 
 def linearfit(
-    p: Path,
+    path_to_data_sheet: Path,
     x="area",
     y="concentration",
     add_X_constant=True,
@@ -154,9 +153,45 @@ def linearfit(
     y_transformation=identity,
     x_transformation=identity,
 ):
-    """Log base e fit."""
+    """
+    Fit a linear function onto data.
+    Arguments:
+        path_to_data_sheet: pathlib.Path
+            The path to the data that you wish to fit
+        x: str, default "area"
+            The column name corresponding to the quantity measured
+            by the instrument
+        y: str, default "concentration"
+            The column name corresponding to the concentration
+        add_X_constant: bool, default True
+            If True, allow the fit to have a y-intercept parameter.
+            If False, restrict the fit to pass through the origin.
+        x_range: (float, float), default None
+            The range over which to restrict the fit.
+        y_transformation: function, default identity
+            The function to use to modify the data.
+            In linear fitting, the transformation should
+            be the identity.
+        x_transformation: function, default identity
+            The function to use to modify the data.
+            In linear fitting, the transformation should be
+            the identity.
+
+    Returns:
+        y_func, a python function (the function allowing you
+        to put in your areas and get concentrations)
+        dy_func, the function returning the fitting uncertainty on the data
+        res, the statsmodels results object with more
+        statistical details about the fit.
+    """
     df, X, y = filter_data(
-        p, x, y, x_range, x_transformation, y_transformation, add_X_constant
+        path_to_data_sheet,
+        x,
+        y,
+        x_range,
+        x_transformation,
+        y_transformation,
+        add_X_constant,
     )
 
     model = sm.OLS(y, X)
@@ -192,7 +227,6 @@ def save_model(
 
     def save(p, obj):
         with open(p, "wb") as outfile:
-            # help(dill.dump)
             dill.dump(obj, outfile)
         return
 
@@ -228,15 +262,34 @@ def main():
     powerlaw_y, powerlaw_dy, powerlaw_model = powerlawfit(infile_path)
     exp_y, exp_dy, exponential_model = exponentialfit(infile_path)
     lin_y, lin_dy, linear_model = linearfit(infile_path)
+    print(linear_model.summary())
+
+    lowbounds = (0, 200)
+    highbounds = (100, 100000)
     lin_low_y, lin_low_dy, linear_low_model = linearfit(
-        infile_path, x_range=(0, 200)
+        infile_path, x_range=lowbounds
     )
     lin_high_y, lin_high_dy, linear_high_model = linearfit(
-        infile_path, x_range=(100, 10000)
+        infile_path, x_range=highbounds
     )
 
     path_out_lin_low = p / "fits" / "2025_06_17_low"
-    save_model(path_out_lin_low, lin_low_y, lin_low_dy, linear_low_model)
+    save_model(
+        path_out_lin_low,
+        lin_low_y,
+        lin_low_dy,
+        linear_low_model,
+        bounds=lowbounds,
+    )
+
+    path_out_lin_high = p / "fits" / "2025_06_17_high"
+    save_model(
+        path_out_lin_high,
+        lin_high_y,
+        lin_high_dy,
+        linear_high_model,
+        bounds=highbounds,
+    )
 
     xx = "area"
     yy = "concentration"
@@ -277,7 +330,6 @@ def main():
         )
 
         ax[1].plot(x, y, "o", label="real data")
-        ax[1].plot
         ax[1].errorbar(
             x1,
             powerlaw_y(x1),
@@ -291,7 +343,7 @@ def main():
 
         plt.show()
 
-    # plot_results()
+    plot_results()
 
     return
 
