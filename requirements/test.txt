@@ -6,4 +6,3 @@ codecov
 coverage
 pytest-cov
 pytest-env
-qt6
