@@ -1,10 +1,14 @@
 import pandas as pd
+import numpy as np
 
 
 def calculate_dilution_factor(data):
-    data["dilution_factor"] = (
-        data["amt_standard"] + data["amt_water"]
-    ) / data["amt_standard"]
+    dilution_factor = (data["amt_standard"] + data["amt_water"]) / data[
+        "amt_standard"
+    ]
+    dilution_factor = np.where(dilution_factor == np.inf, 1.0, dilution_factor)
+
+    data["dilution_factor"] = dilution_factor
     return data
 
 
