@@ -243,6 +243,15 @@ def save_model(
 
 
 def load_model(path_in):
+    """Loads model using dill.
+
+    path_in: pathlib.Path
+
+    Returns:
+        y: function
+        dy: function
+        model: sm.OLS.results
+    """
     func_path = path_in.with_suffix(".y")
     print(func_path)
     err_path = path_in.with_suffix(".dy")
