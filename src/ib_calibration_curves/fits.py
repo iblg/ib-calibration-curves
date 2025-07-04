@@ -216,6 +216,15 @@ def save_model(
     fitting_result: sm.OLS,
     bounds: tuple,
 ):
+    """
+    Saves the model using dill.
+    path_out: pathlib.Path. The path at which you want to save the model.
+
+    y_function: function
+    dy_function: function
+    fitting_result: sm.OLS
+    bounds: tuple
+    """
     func_path = path_out.with_suffix(".y")
     err_path = path_out.with_suffix(".dy")
     mod_path = path_out.with_suffix(".model")
