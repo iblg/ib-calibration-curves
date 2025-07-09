@@ -1,28 +1,36 @@
 import pandas as pd
 from pathlib import Path
-from ib_calibration_curves.apply_model import apply_model
+from ib_calibration_curves.apply_model import apply_model, set_bounds_warning
 from ib_calibration_curves.fits import load_model
-
-# model_p = Path() / "tests" / "test_apply_model_files" / "test"
-# file_p = Path() / "tests" / "test_apply_model_files" / "example_data.xlsx"
+from pandas.testing import assert_series_equal
 
 
 def test_apply_model_loads_dataframe(monkeypatch, data_files):
     monkeypatch.setattr("builtins.input", lambda _: "y")
     data_dir = Path(data_files)
-    model_p = data_dir / "test"
-    file_p = data_files / "example_data.xlsx"
-    y, dy, model = load_model(model_p)
-    df = apply_model(file_p, y, dy, model)
+    model_path = data_dir / "example_linear_model"
+    data_path = data_files / "example_data.xlsx"
+    y, dy, model, bounds = load_model(model_path)
+    df = apply_model(
+        data_path,
+        y,
+        dy,
+        model,
+        bounds,
+        model_path,
+        data_path,
+    )
     assert isinstance(df, pd.DataFrame)
 
 
-def test_loads_x_bounds():
-    # x_bounds_path = model_p.with_suffix('.logfile')
-    pass
-
-
-def test_raises_problem_if_outside_range():
+def test_apply_model_outside_range(data_files):
     """If a point is outside the range used to make the calibration curve, it
-    should save in csv with a warning."""
-    pass
+    should save in CSV with a warning."""
+    data_path = data_files / "example_data.xlsx"
+    data = pd.read_excel(data_path)
+
+    bounds = (1090.0, 1250.0)
+    result = set_bounds_warning(data, bounds)
+    expected = data["outside_range_warning"]
+
+    assert_series_equal(result, expected)
