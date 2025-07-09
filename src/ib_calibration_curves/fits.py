@@ -253,9 +253,9 @@ def load_model(path_in):
         model: sm.OLS.results
     """
     func_path = path_in.with_suffix(".y")
-    print(func_path)
     err_path = path_in.with_suffix(".dy")
     mod_path = path_in.with_suffix(".model")
+    bounds_path = path_in.with_suffix(".bounds")
 
     def load(p):
         with open(p, "rb") as infile:
@@ -265,7 +265,8 @@ def load_model(path_in):
     y = load(func_path)
     dy = load(err_path)
     model = load(mod_path)
-    return y, dy, model
+    bounds = load(bounds_path)
+    return y, dy, model, bounds
 
 
 def main():
