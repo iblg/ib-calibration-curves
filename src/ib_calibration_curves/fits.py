@@ -139,12 +139,6 @@ def get_linear_dy_function(dy_val):
     return dy
 
 
-def generate_log_file(fitting_function, xbounds, res):
-    s1 = "Fit using {}".format(fitting_function.__name__)
-    print(s1)
-    return
-
-
 def linearfit(
     path_to_data_sheet: Path,
     x="area",
@@ -194,8 +188,6 @@ def linearfit(
         y_transformation,
         add_X_constant,
     )
-    print(df)
-
     model = sm.OLS(y, X)
     res = model.fit()
 
@@ -204,15 +196,6 @@ def linearfit(
     dy = np.sqrt(res.mse_resid)
     dy_func = get_linear_dy_function(dy)
     return y_func, dy_func, res
-
-
-def taylor_exponential_fit_example():
-    # this agrees with what is found in Taylor, page 195: 11.93 and -0.089
-    p = Path("taylor_exponential_example.xlsx")
-    pd.read_excel(p)
-    y, dy, res = exponentialfit(p, x="x", y="y")
-    print(res.summary())
-    return
 
 
 def save_model(
