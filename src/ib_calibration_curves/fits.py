@@ -18,7 +18,7 @@ def filter_data(
     path_in: Path,
     x_column: str,
     y_column: str,
-    x_bounds: tuple,
+    x_bounds,
     x_transformation,
     y_transformation,
     add_X_constant: bool,
@@ -221,7 +221,6 @@ def linearfit(
     res = model.fit()
 
     y_func = get_linear_y_function(res.params.iloc[0], res.params.iloc[1])
-
     dy = np.sqrt(res.mse_resid)
     dy_func = get_linear_dy_function(dy)
     return y_func, dy_func, res
@@ -232,7 +231,7 @@ def save_model(
     y_function,
     dy_function,
     fitting_result: sm.OLS,
-    bounds: tuple,
+    bounds,
 ):
     """
     Saves the model using dill.
@@ -241,7 +240,7 @@ def save_model(
     y_function: function
     dy_function: function
     fitting_result: sm.OLS
-    bounds: tuple
+    bounds
     """
     func_path = path_out.with_suffix(".y")
     err_path = path_out.with_suffix(".dy")
