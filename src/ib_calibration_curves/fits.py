@@ -257,6 +257,7 @@ def load_model(path_in):
         y: function
         dy: function
         model: sm.OLS.results
+        bounds: tuple
     """
     func_path = path_in.with_suffix(".y")
     err_path = path_in.with_suffix(".dy")
