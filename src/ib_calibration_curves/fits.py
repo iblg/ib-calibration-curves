@@ -15,35 +15,64 @@ def log10(x):
 
 
 def filter_data(
-    p: Path, x, y, x_range, x_transformation, y_transformation, add_X_constant
+    path_in: Path,
+    x_column: str,
+    y_column: str,
+    x_bounds: tuple,
+    x_transformation,
+    y_transformation,
+    add_X_constant: bool,
 ):
-    if p.suffix == ".csv":
-        df = pd.read_csv(p)
-    elif p.suffix == ".xlsx":
-        df = pd.read_excel(p)
+    """
+    path_in: Path
+    Path to the data file
+
+    x_column: str
+    Name of the x column in the data file
+
+    y_column: str
+    Name of the y column in the data file
+
+    x_bounds: tuple
+    Bounds over which to filter the x values
+
+    x_transformation: function
+    Transformation function for x values. Should be identity for linear fits.
+
+    y_transformation: function
+    Transformation function for y values. Should be identity for linear fits.
+
+    add_X_constant: bool
+    If True, fit will include y-intercept. If False, fit will be restricted
+    to pass through the origin.
+    """
+    if path_in.suffix == ".csv":
+        df = pd.read_csv(path_in)
+    elif path_in.suffix == ".xlsx":
+        df = pd.read_excel(path_in)
     else:
         print("Wrong data type")
         return None
 
-    if x_range is None:
+    if x_bounds is None:
         pass
     else:
-        print("Filtering over {}, {}".format(x_range[0], x_range[1]))
+        print("Filtering over {}, {}".format(x_bounds[0], x_bounds[1]))
         # df = (
         #     df.where(df[x] > x_range[0])
         #     .where(df[x] < x_range[1])
         #     .dropna(how="all")
         # )
-        df = df.loc[df[x] >= x_range[0]]
-        df = df.loc[df[x] <= x_range[1]]
+        df = df.loc[df[x_column] >= x_bounds[0]]
+        df = df.loc[df[x_column] <= x_bounds[1]]
         # mask = df[x].notna()
         # df = df[mask]
 
-    y = y_transformation(df[y])
-    X = x_transformation(df[x])
+    y_column = y_transformation(df[y_column])
+    X = x_transformation(df[x_column])
     if add_X_constant:
         X = sm.add_constant(X)
-    return df, X, y
+    return df, X, y_column
 
 
 def get_power_law_y_function(a0, a1):
@@ -300,18 +329,18 @@ def main():
     yy = "concentration"
     df, x, y = filter_data(
         infile_path,
-        x=xx,
-        y=yy,
-        x_range=None,
+        x_column=xx,
+        y_column=yy,
+        x_bounds=None,
         x_transformation=identity,
         y_transformation=identity,
         add_X_constant=True,
     )
     df_log, x_log, y_log = filter_data(
         infile_path,
-        x=xx,
-        y=yy,
-        x_range=None,
+        x_column=xx,
+        y_column=yy,
+        x_bounds=None,
         x_transformation=log10,
         y_transformation=log10,
         add_X_constant=True,
