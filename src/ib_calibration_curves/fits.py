@@ -29,11 +29,16 @@ def filter_data(
         pass
     else:
         print("Filtering over {}, {}".format(x_range[0], x_range[1]))
-        df = (
-            df.where(df[x] > x_range[0])
-            .where(df[x] < x_range[1])
-            .dropna(how="all")
-        )
+        # df = (
+        #     df.where(df[x] > x_range[0])
+        #     .where(df[x] < x_range[1])
+        #     .dropna(how="all")
+        # )
+        df = df.loc[df[x] >= x_range[0]]
+        df = df.loc[df[x] <= x_range[1]]
+        # mask = df[x].notna()
+        # df = df[mask]
+
     y = y_transformation(df[y])
     X = x_transformation(df[x])
     if add_X_constant:
@@ -189,6 +194,7 @@ def linearfit(
         y_transformation,
         add_X_constant,
     )
+    print(df)
 
     model = sm.OLS(y, X)
     res = model.fit()
