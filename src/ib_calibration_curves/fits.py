@@ -69,6 +69,7 @@ def filter_data(
         # df = df[mask]
 
     y_column = y_transformation(df[y_column])
+    print(df.columns)
     X = x_transformation(df[x_column])
     if add_X_constant:
         X = sm.add_constant(X)
@@ -204,9 +205,16 @@ def linearfit(
     Returns:
         y_func, a python function (the function allowing you
         to put in your areas and get concentrations)
+
         dy_func, the function returning the fitting uncertainty on the data
-        res, the statsmodels results object with more
-        statistical details about the fit.
+
+        res, the statsmodels FittingResults object with more statistical
+        details about the fit.
+
+        model, Statsmodels model object
+
+        bounds: tuple, default None
+
     """
     df, X, y = filter_data(
         path_to_data_sheet,
@@ -218,12 +226,27 @@ def linearfit(
         add_X_constant,
     )
     model = sm.OLS(y, X)
-    res = model.fit()
+    results = model.fit()
 
-    y_func = get_linear_y_function(res.params.iloc[0], res.params.iloc[1])
-    dy = np.sqrt(res.mse_resid)
+    y_func = get_linear_y_function(
+        results.params.iloc[0], results.params.iloc[1]
+    )
+    dy = np.sqrt(results.mse_resid)
     dy_func = get_linear_dy_function(dy)
-    return y_func, dy_func, res
+    if x_range is None:
+        x_range = (df[x].min(), df[x].max())
+    else:
+        pass
+    y_range = y_func(np.array(x_range))
+    fit = {
+        "y": y_func,
+        "dy": dy_func,
+        "results": results,
+        "model": model,
+        "x_range": x_range,
+        "y_range": y_range,
+    }
+    return fit
 
 
 def save_model(
