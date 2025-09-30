@@ -15,30 +15,65 @@ def log10(x):
 
 
 def filter_data(
-    p: Path, x, y, x_range, x_transformation, y_transformation, add_X_constant
+    path_in: Path,
+    x_column: str,
+    y_column: str,
+    x_bounds,
+    x_transformation,
+    y_transformation,
+    add_X_constant: bool,
 ):
-    if p.suffix == ".csv":
-        df = pd.read_csv(p)
-    elif p.suffix == ".xlsx":
-        df = pd.read_excel(p)
+    """
+    path_in: Path
+    Path to the data file
+
+    x_column: str
+    Name of the x column in the data file
+
+    y_column: str
+    Name of the y column in the data file
+
+    x_bounds: tuple
+    Bounds over which to filter the x values
+
+    x_transformation: function
+    Transformation function for x values. Should be identity for linear fits.
+
+    y_transformation: function
+    Transformation function for y values. Should be identity for linear fits.
+
+    add_X_constant: bool
+    If True, fit will include y-intercept. If False, fit will be restricted
+    to pass through the origin.
+    """
+    if path_in.suffix == ".csv":
+        df = pd.read_csv(path_in)
+    elif path_in.suffix == ".xlsx":
+        df = pd.read_excel(path_in)
     else:
         print("Wrong data type")
         return None
 
-    if x_range is None:
+    if x_bounds is None:
         pass
     else:
-        print("Filtering over {}, {}".format(x_range[0], x_range[1]))
-        df = (
-            df.where(df[x] > x_range[0])
-            .where(df[x] < x_range[1])
-            .dropna(how="all")
-        )
-    y = y_transformation(df[y])
-    X = x_transformation(df[x])
+        print("Filtering over {}, {}".format(x_bounds[0], x_bounds[1]))
+        # df = (
+        #     df.where(df[x] > x_range[0])
+        #     .where(df[x] < x_range[1])
+        #     .dropna(how="all")
+        # )
+        df = df.loc[df[x_column] >= x_bounds[0]]
+        df = df.loc[df[x_column] <= x_bounds[1]]
+        # mask = df[x].notna()
+        # df = df[mask]
+
+    y_column = y_transformation(df[y_column])
+    print(df.columns)
+    X = x_transformation(df[x_column])
     if add_X_constant:
         X = sm.add_constant(X)
-    return df, X, y
+    return df, X, y_column
 
 
 def get_power_law_y_function(a0, a1):
@@ -134,12 +169,6 @@ def get_linear_dy_function(dy_val):
     return dy
 
 
-def generate_log_file(fitting_function, xbounds, res):
-    s1 = "Fit using {}".format(fitting_function.__name__)
-    print(s1)
-    return
-
-
 def linearfit(
     path_to_data_sheet: Path,
     x="area",
@@ -176,9 +205,16 @@ def linearfit(
     Returns:
         y_func, a python function (the function allowing you
         to put in your areas and get concentrations)
+
         dy_func, the function returning the fitting uncertainty on the data
-        res, the statsmodels results object with more
-        statistical details about the fit.
+
+        res, the statsmodels FittingResults object with more statistical
+        details about the fit.
+
+        model, Statsmodels model object
+
+        bounds: tuple, default None
+
     """
     df, X, y = filter_data(
         path_to_data_sheet,
@@ -189,24 +225,28 @@ def linearfit(
         y_transformation,
         add_X_constant,
     )
-
     model = sm.OLS(y, X)
-    res = model.fit()
+    results = model.fit()
 
-    y_func = get_linear_y_function(res.params.iloc[0], res.params.iloc[1])
-
-    dy = np.sqrt(res.mse_resid)
+    y_func = get_linear_y_function(
+        results.params.iloc[0], results.params.iloc[1]
+    )
+    dy = np.sqrt(results.mse_resid)
     dy_func = get_linear_dy_function(dy)
-    return y_func, dy_func, res
-
-
-def taylor_exponential_fit_example():
-    # this agrees with what is found in Taylor, page 195: 11.93 and -0.089
-    p = Path("taylor_exponential_example.xlsx")
-    pd.read_excel(p)
-    y, dy, res = exponentialfit(p, x="x", y="y")
-    print(res.summary())
-    return
+    if x_range is None:
+        x_range = (df[x].min(), df[x].max())
+    else:
+        pass
+    y_range = y_func(np.array(x_range))
+    fit = {
+        "y": y_func,
+        "dy": dy_func,
+        "results": results,
+        "model": model,
+        "x_range": x_range,
+        "y_range": y_range,
+    }
+    return fit
 
 
 def save_model(
@@ -214,7 +254,7 @@ def save_model(
     y_function,
     dy_function,
     fitting_result: sm.OLS,
-    bounds: tuple,
+    bounds,
 ):
     """
     Saves the model using dill.
@@ -223,7 +263,7 @@ def save_model(
     y_function: function
     dy_function: function
     fitting_result: sm.OLS
-    bounds: tuple
+    bounds
     """
     func_path = path_out.with_suffix(".y")
     err_path = path_out.with_suffix(".dy")
@@ -251,6 +291,7 @@ def load_model(path_in):
         y: function
         dy: function
         model: sm.OLS.results
+        bounds: tuple
     """
     func_path = path_in.with_suffix(".y")
     err_path = path_in.with_suffix(".dy")
@@ -310,18 +351,18 @@ def main():
     yy = "concentration"
     df, x, y = filter_data(
         infile_path,
-        x=xx,
-        y=yy,
-        x_range=None,
+        x_column=xx,
+        y_column=yy,
+        x_bounds=None,
         x_transformation=identity,
         y_transformation=identity,
         add_X_constant=True,
     )
     df_log, x_log, y_log = filter_data(
         infile_path,
-        x=xx,
-        y=yy,
-        x_range=None,
+        x_column=xx,
+        y_column=yy,
+        x_bounds=None,
         x_transformation=log10,
         y_transformation=log10,
         add_X_constant=True,

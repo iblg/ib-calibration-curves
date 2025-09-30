@@ -72,7 +72,7 @@ def apply_model(
     df[y_column_name] = y(x)
     df[dy_column_name] = dy(x)
 
-    df["bounds_warning_column_name"] = set_bounds_warning(
+    df[bounds_warning_column_name] = set_bounds_warning(
         df,
         bounds,
         x_column_name=x_column_name,
