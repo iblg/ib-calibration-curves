@@ -250,35 +250,59 @@ def linearfit(
 
 
 def save_model(
-    path_out: Path,
-    y_function,
-    dy_function,
-    fitting_result: sm.OLS,
-    bounds,
+    path_out,
+    fit: dict,
+    y_unit: str = None,
 ):
-    """
-    Saves the model using dill.
+    """Saves the model using dill.
+
     path_out: pathlib.Path. The path at which you want to save the model.
 
-    y_function: function
-    dy_function: function
-    fitting_result: sm.OLS
-    bounds
+    fit: dict,
+    with keys
+        "y": y_func,
+        "dy": dy_func,
+        "results": statsmodels.FittingResults object,
+        "model": statsmodels object,
+        "x_range": tuple,
+        "y_range": tuple,
+    }
     """
     func_path = path_out.with_suffix(".y")
     err_path = path_out.with_suffix(".dy")
     mod_path = path_out.with_suffix(".model")
-    log_path = path_out.with_suffix(".bounds")
+    info_path = path_out.with_suffix(".txt")
 
     def save(p, obj):
         with open(p, "wb") as outfile:
             dill.dump(obj, outfile)
         return
 
-    save(func_path, y_function)
-    save(err_path, dy_function)
-    save(mod_path, fitting_result)
-    save(log_path, bounds)
+    save(func_path, fit["y"])
+    save(err_path, fit["dy"])
+    save(mod_path, fit["results"])
+
+    def save_summary(p, fit, y_unit):
+        summ = fit["results"].summary()
+        summ = [str(summ)]
+        summ.append(50 * "=")
+        summ.append(
+            "x-range: ({:1.6f}, {:1.6f})".format(
+                fit["x_range"][0], fit["x_range"][1]
+            )
+        )
+        summ.append(
+            "y-range: ({:1.6f}, {:1.6f})".format(
+                fit["y_range"][0], fit["y_range"][1]
+            )
+        )
+        summ.append("Standard error: {:2.5f}".format(fit["dy"]([0])))
+        summ.append("y unit: {}".format(y_unit))
+
+        with open(p, "w") as outfile:
+            outfile.write("\n".join(summ))
+
+    save_summary(info_path, fit, y_unit)
     return
 
 
