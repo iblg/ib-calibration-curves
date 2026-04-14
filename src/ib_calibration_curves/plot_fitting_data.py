@@ -67,7 +67,7 @@ def plot_results(
         y_function(x_data) - dy_function(x_data),
         y_function(x_data) + dy_function(x_data),
         color="black",
-        alpha=0.5,
+        alpha=0.3,
         edgecolor=None,
         label=r"Standard error region",
     )
