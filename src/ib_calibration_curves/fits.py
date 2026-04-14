@@ -250,7 +250,7 @@ def linearfit(
 
 
 def save_model(
-    path_out,
+    path_out: Path,
     fit: dict,
     y_unit: str = None,
 ):
@@ -266,7 +266,9 @@ def save_model(
         "model": statsmodels object,
         "x_range": tuple,
         "y_range": tuple,
-    }
+
+    y_unit: str, default None
+    Unit of the y_func.
     """
     func_path = path_out.with_suffix(".y")
     err_path = path_out.with_suffix(".dy")
@@ -320,7 +322,7 @@ def load_model(path_in):
     func_path = path_in.with_suffix(".y")
     err_path = path_in.with_suffix(".dy")
     mod_path = path_in.with_suffix(".model")
-    bounds_path = path_in.with_suffix(".bounds")
+    summary_path = path_in.with_suffix(".txt")
 
     def load(p):
         with open(p, "rb") as infile:
@@ -330,8 +332,12 @@ def load_model(path_in):
     y = load(func_path)
     dy = load(err_path)
     model = load(mod_path)
-    bounds = load(bounds_path)
-    return y, dy, model, bounds
+
+    with open(summary_path, "r") as infile:
+        summary = infile.readlines()
+
+    d = {"y": y, "dy": dy, "model": model, "summary": summary}
+    return d
 
 
 def main():
