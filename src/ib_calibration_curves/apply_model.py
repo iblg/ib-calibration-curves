@@ -1,4 +1,3 @@
-from ib_calibration_curves.fits import load_model
 from pathlib import Path
 import pandas as pd
 import numpy as np
@@ -11,7 +10,7 @@ def set_bounds_warning(
     warning_col_name="outside_range_warning",
 ):
     x = data[x_column_name]
-    warning_col = x.copy()
+    warning_col = x.copy().astype("str")
     warning_col.name = warning_col_name
 
     for i in range(x.shape[0]):
@@ -92,25 +91,26 @@ def apply_model(
             pass
         else:
             return None
-    df.to_excel(save_to_path, index=False)
+    df.to_csv(save_to_path, index=False)
     return df
 
 
-def main():
-    p = Path("/Users/ianbillinge/Documents/kimlab/projects")
-    p = p / "vuv/xanthydrol/fits/2025_06_17_low"
-
-    y, dy, model, bounds = load_model(p)
-    file_path = Path("/Users/ianbillinge/Documents/kimlab/projects/")
-    file_path = file_path / "vuv/xanthydrol/2025-06-17/20250617.xlsx"
-    df = pd.read_excel(file_path)
-    df = apply_model(
-        file_path, y, dy, model, model_path=p, x_column_name="Area"
-    )
-    print(df)
-
-    return
-
-
-if __name__ == "__main__":
-    main()
+#
+# def main():
+#     p = Path("/Users/ianbillinge/Documents/kimlab/projects")
+#     p = p / "vuv/xanthydrol/fits/2025_06_17_low"
+#
+#     y, dy, model, bounds = load_model(p)
+#     file_path = Path("/Users/ianbillinge/Documents/kimlab/projects/")
+#     file_path = file_path / "vuv/xanthydrol/2025-06-17/20250617.xlsx"
+#     df = pd.read_excel(file_path)
+#     df = apply_model(
+#         file_path, y, dy, model, model_path=p, x_column_name="Area"
+#     )
+#     print(df)
+#
+#     return
+# #
+#
+# if __name__ == "__main__":
+#     main()
