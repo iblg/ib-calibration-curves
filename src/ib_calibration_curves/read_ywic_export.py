@@ -56,7 +56,10 @@ def find_row_and_col_with_substring(df: pd.DataFrame, substring: str):
 
 
 def read_one_page(
-    data: dict[pd.DataFrame], page_name: str, print_flag: bool = False
+    data: dict[pd.DataFrame],
+    page_name: str,
+    print_flag: bool = False,
+    detector="DAD1",
 ) -> pd.DataFrame:
     """
     :param data: dict[pandas.DataFrame]. The data to be processed. data should
@@ -80,35 +83,52 @@ def read_one_page(
     df = df.dropna(axis="rows", how="all")
     df = df.reset_index(drop=True)
 
-    sum_str = "sum"
+    sum_str = "Sum"
     sum_idx = find_row_with_substring(df, sum_str)
     sum_rows = df.loc[sum_idx].index
 
-    DAD_str = "DAD1"
-    DAD_idx = find_row_with_substring(df, DAD_str)
-    DAD_rows = df.loc[DAD_idx].index
+    default_columns = ["RT [min]", "Width [min]", "Area", "Height", "Area%"]
+    empty_dataframe = pd.DataFrame(np.nan, index=[0], columns=default_columns)
+    if sum_rows.empty:
+        print(f"No peaks found for {page_name}")
+        # data = {"spot": spot, "DAD": None, "FLD": None}
+        data = {"spot": spot, "DAD": empty_dataframe, "FLD": empty_dataframe}
+        return data
 
-    FLD_str = "FLD"
-    FLD_idx = find_row_with_substring(df, FLD_str)
-    FLD_rows = df.loc[FLD_idx].index
+    def process_detector(det):
+        idx = find_row_with_substring(df, det)
+        rows = df.loc[idx].index
+        if "DAD" in det:
+            sum_row_idx = 0
+        elif "FLD" in det:
+            sum_row_idx = 1
+        else:
+            print('Unknown detector. Should be "DAD1" or "FLD".')
+        if len(sum_rows) > 1:
+            data = df.iloc[rows[0] + 2 : sum_rows[sum_row_idx]]
+        elif len(sum_rows) == 1:
+            data = df.iloc[rows[0] + 2 : sum_rows[0]]
+        data = data.dropna(axis="columns", how="all")
+        data = pd.DataFrame(data)
+        cols = {
+            "Unnamed: 2": "RT [min]",
+            "Unnamed: 3": "Width [min]",
+            "Unnamed: 7": "Area",
+            "Unnamed: 8": "Height",
+            "Unnamed: 10": "Area%",
+        }
+        data = data.rename(columns=cols)
+        return data
 
-    DAD_data = df.iloc[DAD_rows[0] + 2 : sum_rows[0]]
-    DAD_data = DAD_data.dropna(axis="columns", how="all")
-    DAD_data = pd.DataFrame(DAD_data)
-    cols = {
-        "Unnamed: 2": "RT [min]",
-        "Unnamed: 3": "Width [min]",
-        "Unnamed: 7": "Area",
-        "Unnamed: 8": "Height",
-        "Unnamed: 10": "Area%",
-    }
+    if "DAD" in detector:
+        DAD_data = process_detector(detector)
+    else:
+        DAD_data = None
 
-    DAD_data = DAD_data.rename(columns=cols)
-
-    FLD_data = df.iloc[FLD_rows[0] + 2 : sum_rows[1]]
-    FLD_data = FLD_data.dropna(axis="columns", how="all")
-
-    FLD_data = FLD_data.rename(columns=cols)
+    if "FLD" in detector:
+        FLD_data = process_detector(detector)
+    else:
+        FLD_data = None
 
     if print_flag:
         print(f"FLD data: \n{FLD_data}")
@@ -142,8 +162,12 @@ def flatten_detector_peak_into_array(
     :return: pandas DataFrame. The DataFrame contains the values for the
         peaks specified in peak_RTs, sample-by-sample.
     """
-    print(data)
-    peak_times = peak_RTs[detector]
+    try:
+        peak_times = peak_RTs[detector]
+    except KeyError:
+        print(f"No peaks found for {detector}.")
+        return pd.DataFrame()
+
     spots = [i["spot"] for i in data]
     data = [i[detector] for i in data]
 
@@ -152,7 +176,10 @@ def flatten_detector_peak_into_array(
     # print(f'Detector: {detector}')
 
     def get_area_single_peak(data, name, time):
-        print(name, time)
+        # print(name, time)
+        # print('\n\n\n\n\n')
+        print("We are in get_area_single_peak")
+        # [print(i['Area'].dtype) for i in data]
 
         area = [
             d["Area"]
@@ -160,9 +187,11 @@ def flatten_detector_peak_into_array(
             .where(d["RT [min]"] > time[0])
             for d in data
         ]
+
         area = [d.dropna(axis="rows", how="all") for d in area]
-        area = [float(d.item()) for d in area]
+        area = [float(d.item()) if d.shape[0] > 0 else 0 for d in area]
         area = {f"area_{detector}_{name}": area}
+
         # print(area)
         # [print(f'{spot}: {a}') for spot, a in zip(spots, area)]
         return area
@@ -199,6 +228,7 @@ def flatten_peaks_into_array(
         'peak_B_name': (10.0, 10.5), 'peak_C_name': (12.0, 13.0) } }
         This would find any peaks that the machine reports between 1.4
         and 1.6 mins for the FLD. And so on.
+    :param detector: str. 'FLD' or 'DAD'. The detector to process.
     :return: pandas DataFrame. The DataFrame contains the values for the
         peaks specified in peak_RTs, sample-by-sample.
     """
@@ -210,7 +240,12 @@ def flatten_peaks_into_array(
 
 
 def read_long_format_ywic_export(
-    path_to_data: Path, path_to_processed_data: Path, peak_RTs: dict
+    path_to_data: Path,
+    path_to_processed_data: Path,
+    peak_RTs: dict,
+    detector: str | list[str] = "DAD1",
+    path_to_flattened_data: Path = None,
+    print_flag: bool = False,
 ) -> pd.DataFrame:
     """Automatically read a long-format ywic export and save to file.
 
@@ -237,10 +272,12 @@ def read_long_format_ywic_export(
     data.pop("Page 1")  # drop the unneeded first page, which doesn't contain
     # sample data
     data = [
-        read_one_page(data, page_name, print_flag=False)
+        read_one_page(
+            data, page_name, detector=detector, print_flag=print_flag
+        )
         for page_name in data.keys()
     ]
-    # [print('\n\n\n', i) for d in data for i in d]
-    data = flatten_peaks_into_array(data, peak_RTs)
-    data.to_csv("./all_peaks.csv", index=False)
+    if path_to_flattened_data is not None:
+        data = flatten_peaks_into_array(data, peak_RTs)
+        data.to_csv(path_to_flattened_data, index=False)
     return data
