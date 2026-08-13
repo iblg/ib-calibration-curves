@@ -46,9 +46,9 @@ def filter_data(
     If True, fit will include y-intercept. If False, fit will be restricted
     to pass through the origin.
     """
-    if path_in.suffix == ".csv":
+    if path_in.suffix.lower() == ".csv":
         df = pd.read_csv(path_in, **read_file_kwargs)
-    elif path_in.suffix == ".xlsx":
+    elif path_in.suffix.lower() == ".xlsx":
         df = pd.read_excel(path_in, **read_file_kwargs)
     else:
         print("Wrong data type")

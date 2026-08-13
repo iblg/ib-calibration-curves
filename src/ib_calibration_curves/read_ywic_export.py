@@ -178,23 +178,24 @@ def flatten_detector_peak_into_array(
     def get_area_single_peak(data, name, time):
         # print(name, time)
         # print('\n\n\n\n\n')
-        print("We are in get_area_single_peak")
         # [print(i['Area'].dtype) for i in data]
 
-        area = [
+        areas = [
             d["Area"]
             .where(d["RT [min]"] < time[1])
             .where(d["RT [min]"] > time[0])
             for d in data
         ]
-
-        area = [d.dropna(axis="rows", how="all") for d in area]
-        area = [float(d.item()) if d.shape[0] > 0 else 0 for d in area]
-        area = {f"area_{detector}_{name}": area}
+        # [print(f'\n{area}') for area in areas]
+        areas = [d.dropna(axis="rows", how="all") for d in areas]
+        areas = [
+            float(d.item()) if d.shape[0] > 0 else float(0) for d in areas
+        ]
+        areas = {f"area_{detector}_{name}": areas}
 
         # print(area)
         # [print(f'{spot}: {a}') for spot, a in zip(spots, area)]
-        return area
+        return areas
 
     areas = []
     for name, time in peak_times.items():

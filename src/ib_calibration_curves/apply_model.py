@@ -66,7 +66,12 @@ def apply_model(
     if dy_column_name is None:
         dy_column_name = "d_" + y_column_name
 
-    df = pd.read_excel(file_path)
+    if file_path.suffix == ".xlsx":
+        df = pd.read_excel(file_path)
+    elif file_path.suffix == ".csv":
+        df = pd.read_csv(file_path)
+    else:
+        raise ValueError()
     x = df[x_column_name]
     df[y_column_name] = y(x)
     df[dy_column_name] = dy(x)
@@ -90,7 +95,7 @@ def apply_model(
         if response == "y":
             pass
         else:
-            return None
+            return df
     df.to_csv(save_to_path, index=False)
     return df
 
