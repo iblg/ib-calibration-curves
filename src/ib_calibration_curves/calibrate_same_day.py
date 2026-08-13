@@ -9,6 +9,7 @@ from ib_calibration_curves.dilution import (
     calculate_dilution_factor,
 )
 from ib_calibration_curves.fits import linearfit, save_model
+from ib_calibration_curves.plot_fitting_data import plot_results
 
 
 def check_calibrant_cols(
@@ -77,9 +78,10 @@ def calibrate_same_day(
     y_col: str,
     model_save_path: Path,
     method: str = "linear",
-    y_unit: str = "",
+    y_unit: str = "none",
     verbose: bool = False,
     save_calibrant_data: bool = True,
+    plot_results_flag: bool = True,
 ):
     cal_data = load_data(calibrant_info_path)
 
@@ -104,33 +106,38 @@ def calibrate_same_day(
         print(cal_data)
 
     def merge_areas_into_calibrant(cal_data):
-        meas_data = load_data(data_path)
-        # cal_data = cal_data.merge(meas_data, how='inner', on=index_col)
-        print("Trying to merge.")
-        print("Left is")
-        print(cal_data)
-        print("Right is")
-        print(meas_data)
-        cal_data.merge(meas_data[x_col], how="inner", on=index_col)
+        flattened = load_data(data_path)
+        # cal_data = cal_data.merge(flattened, how="inner", on=index_col)
+        cal_data[x_col] = cal_data[index_col].map(
+            flattened.set_index(index_col)[x_col]
+        )
 
         return cal_data
 
     cal_data = merge_areas_into_calibrant(cal_data)
-
+    print(cal_data)
     if save_calibrant_data:
         save_data(cal_data, calibrant_info_path)
 
     if method == "linear":
         model = linearfit(
-            data_path,
+            calibrant_info_path,
             x=x_col,
             y=y_col,
         )
     else:
         print(
-            f"Fitting method {model} not available. Only linear is supported."
+            f"Fitting method {method} not available. Only linear is supported."
         )
 
     save_model(model_save_path, model, y_unit=y_unit)
 
+    if plot_results_flag:
+        plot_results(
+            model,
+            show_flag=True,
+            save_to_path=model_save_path,
+            x_label="signal",
+            y_label=f"{y_col} ({y_unit})",
+        )
     return
