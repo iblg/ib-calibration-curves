@@ -281,4 +281,6 @@ def read_long_format_ywic_export(
     if path_to_flattened_data is not None:
         data = flatten_peaks_into_array(data, peak_RTs)
         data.to_csv(path_to_flattened_data, index=False)
+
+    data.to_csv(path_to_processed_data, index=False)
     return data

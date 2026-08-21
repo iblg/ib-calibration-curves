@@ -89,7 +89,7 @@ def apply_model(
 
     if save_to_path == file_path:
         pass
-        print("Proceeding will overwrite original data spreadsheet.\n")
+        print(f"Proceeding will overwrite data spreadsheet {file_path}")
         print("\nReply y to proceed.")
         response = input("Anything else will stop spreadsheet creation.\n")
         if response == "y":

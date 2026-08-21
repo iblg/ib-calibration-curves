@@ -72,6 +72,7 @@ def calibrate_same_day(
     data_path: Path,
     std_col: str,
     analyte_col: str,
+    analyte: str,
     diluent_cols: list[str],
     index_col: str,
     x_col: str,
@@ -99,7 +100,7 @@ def calibrate_same_day(
         cal_data, analyte_column=analyte_col, diluent_columns=diluent_cols
     )
     cal_data = calculate_dilution(
-        cal_data, analyte="h2o2", column_base_string="c_std_"
+        cal_data, analyte=analyte, column_base_string="c_std_"
     )
 
     if verbose:
@@ -115,10 +116,15 @@ def calibrate_same_day(
         return cal_data
 
     cal_data = merge_areas_into_calibrant(cal_data)
-    print(cal_data)
+
     if save_calibrant_data:
         save_data(cal_data, calibrant_info_path)
-
+    if verbose:
+        print("We are just about to fit:")
+        with pd.option_context(
+            "display.max_rows", None, "display.max_columns", None
+        ):
+            print(cal_data)
     if method == "linear":
         model = linearfit(
             calibrant_info_path,
