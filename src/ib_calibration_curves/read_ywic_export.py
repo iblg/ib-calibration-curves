@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from pathlib import Path
+from datetime import datetime
 
 
 def find_row_with_substring(data: pd.DataFrame, substring: str) -> pd.Index:
@@ -36,6 +37,14 @@ def find_measurement_spot(df: pd.DataFrame) -> str:
     spot = df.iloc[row, col]
     spot = spot.values.item()
     return spot
+
+
+def find_injection_datetime(df):
+    value = df.iloc[2, 6]
+    value = value.split("-04:00")[0]
+    fmt = "%Y-%m-%d %H:%M:%S"
+    value = datetime.strptime(value, fmt)
+    return value
 
 
 def find_row_and_col_with_substring(df: pd.DataFrame, substring: str):
@@ -77,6 +86,8 @@ def read_one_page(
 
     df = data[page_name]
 
+    meas_datetime = find_injection_datetime(df)
+
     spot = find_measurement_spot(df)
 
     df = df.dropna(axis="columns", how="all")
@@ -90,8 +101,8 @@ def read_one_page(
     default_columns = ["RT [min]", "Width [min]", "Area", "Height", "Area%"]
     empty_dataframe = pd.DataFrame(np.nan, index=[0], columns=default_columns)
     if sum_rows.empty:
-        print(f"No peaks found for {page_name}")
-        # data = {"spot": spot, "DAD": None, "FLD": None}
+        if print_flag:
+            print(f"No peaks found for {page_name}")
         data = {"spot": spot, "DAD": empty_dataframe, "FLD": empty_dataframe}
         return data
 
@@ -134,7 +145,12 @@ def read_one_page(
         print(f"FLD data: \n{FLD_data}")
         print(f"DAD data: \n{DAD_data}")
 
-    data = {"spot": spot, "DAD": DAD_data, "FLD": FLD_data}
+    data = {
+        "spot": spot,
+        "DAD": DAD_data,
+        "FLD": FLD_data,
+        "meas_datetime": meas_datetime,
+    }
     return data
 
 
@@ -144,11 +160,11 @@ def flatten_detector_peak_into_array(
     """Flatten peaks of interest into an array. This only processes either the
     DAD or FLD data, as specfied in argument detector.
 
-    :param data: dict. A dict containing three items, witk keys: 'spot':
+    :param data: dict. A dict containing four items, witk keys: 'spot':
         the sample spot in the HPLC autosampler 'DAD': a
         pandas.DataFrame containing the DAD data 'FLD': a
         pandas.DataFrame containing the FLD data str (the autosampler
-        spot), followed by
+        spot), followed by 'meas_datetime'
     :param peak_RTs: dict[dict[tuple[float,float]]]. A dict containing
         the retention time bounds for both FLD and DAD signals. For
         instance, if the DAD detector has a peak you care about that
@@ -169,11 +185,9 @@ def flatten_detector_peak_into_array(
         return pd.DataFrame()
 
     spots = [i["spot"] for i in data]
-    data = [i[detector] for i in data]
+    times = [i["meas_datetime"] for i in data]
 
-    # print(f'Data: {data}')
-    # print(f'Peak times: {peak_times}')
-    # print(f'Detector: {detector}')
+    data = [i[detector] for i in data]
 
     def get_area_single_peak(data, name, time):
         # print(name, time)
@@ -202,6 +216,7 @@ def flatten_detector_peak_into_array(
         areas.append(get_area_single_peak(data, name, time))
 
     areas.append({"spot": spots})
+    areas.append({"meas_datetime": times})
 
     # print(areas)
     areas = [pd.DataFrame(area) for area in areas]
@@ -210,16 +225,17 @@ def flatten_detector_peak_into_array(
 
 
 def flatten_peaks_into_array(
-    data: tuple[str, pd.DataFrame, pd.DataFrame], peak_RTs: dict[float]
+    data: dict, peak_RTs: dict[float]
 ) -> pd.DataFrame:
     """Flatten peaks of interest into an array. This only processes either the
     DAD or FLD data, as specfied in argument detector.
 
-    :param data: dict. A dict containing three items, witk keys: 'spot':
+    :param data: dict. A dict containing four items, with keys: 'spot':
         the sample spot in the HPLC autosampler 'DAD': a
         pandas.DataFrame containing the DAD data 'FLD': a
         pandas.DataFrame containing the FLD data str (the autosampler
-        spot), followed by
+        spot) 'meas_datetime': a datetime object showing when the
+        measurement was made.
     :param peak_RTs: dict[dict[tuple[float,float]]]. A dict containing
         the retention time bounds for both FLD and DAD signals. For
         instance, if the DAD detector has a peak you care about that
@@ -235,17 +251,19 @@ def flatten_peaks_into_array(
     """
     DAD_data = flatten_detector_peak_into_array(data, peak_RTs, detector="DAD")
     FLD_data = flatten_detector_peak_into_array(data, peak_RTs, detector="FLD")
+
     all_data = pd.concat([DAD_data, FLD_data], axis="columns")
+
     all_data = all_data.loc[:, ~all_data.columns.duplicated()].copy()
     return all_data
 
 
 def read_long_format_ywic_export(
     path_to_data: Path,
-    path_to_processed_data: Path,
+    path_to_flattened_data: Path,
     peak_RTs: dict,
     detector: str | list[str] = "DAD1",
-    path_to_flattened_data: Path = None,
+    expt_date=None,
     print_flag: bool = False,
 ) -> pd.DataFrame:
     """Automatically read a long-format ywic export and save to file.
@@ -278,9 +296,10 @@ def read_long_format_ywic_export(
         )
         for page_name in data.keys()
     ]
-    if path_to_flattened_data is not None:
-        data = flatten_peaks_into_array(data, peak_RTs)
-        data.to_csv(path_to_flattened_data, index=False)
 
-    data.to_csv(path_to_processed_data, index=False)
+    data = flatten_peaks_into_array(data, peak_RTs)
+    if expt_date is not None:
+        data["expt_date"] = expt_date
+    data.to_csv(path_to_flattened_data, index=False)
+
     return data
