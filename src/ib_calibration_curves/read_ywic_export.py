@@ -299,7 +299,7 @@ def read_long_format_ywic_export(
 
     data = flatten_peaks_into_array(data, peak_RTs)
     if expt_date is not None:
-        data["expt_date"] = expt_date
+        data["expt_date"] = pd.to_datetime(expt_date, format="%Y_%m_%d")
     data.to_csv(path_to_flattened_data, index=False)
 
     return data
