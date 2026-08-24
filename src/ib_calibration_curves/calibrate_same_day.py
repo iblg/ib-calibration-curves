@@ -119,12 +119,14 @@ def calibrate_same_day(
 
     if save_calibrant_data:
         save_data(cal_data, calibrant_info_path)
+
     if verbose:
         print("We are just about to fit:")
         with pd.option_context(
             "display.max_rows", None, "display.max_columns", None
         ):
             print(cal_data)
+
     if method == "linear":
         model = linearfit(
             calibrant_info_path,
