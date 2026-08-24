@@ -264,6 +264,7 @@ def read_long_format_ywic_export(
     peak_RTs: dict,
     detector: str | list[str] = "DAD1",
     expt_date=None,
+    expt_date_format="%Y%m%d",
     print_flag: bool = False,
 ) -> pd.DataFrame:
     """Automatically read a long-format ywic export and save to file.
@@ -299,7 +300,7 @@ def read_long_format_ywic_export(
 
     data = flatten_peaks_into_array(data, peak_RTs)
     if expt_date is not None:
-        data["expt_date"] = pd.to_datetime(expt_date, format="%Y_%m_%d")
+        data["expt_date"] = pd.to_datetime(expt_date, format=expt_date_format)
     data.to_csv(path_to_flattened_data, index=False)
 
     return data
