@@ -1,4 +1,3 @@
-from ib_calibration_curves.fits import load_model
 from pathlib import Path
 import pandas as pd
 import numpy as np
@@ -11,7 +10,7 @@ def set_bounds_warning(
     warning_col_name="outside_range_warning",
 ):
     x = data[x_column_name]
-    warning_col = x.copy()
+    warning_col = x.copy().astype("str")
     warning_col.name = warning_col_name
 
     for i in range(x.shape[0]):
@@ -67,7 +66,12 @@ def apply_model(
     if dy_column_name is None:
         dy_column_name = "d_" + y_column_name
 
-    df = pd.read_excel(file_path)
+    if file_path.suffix == ".xlsx":
+        df = pd.read_excel(file_path)
+    elif file_path.suffix == ".csv":
+        df = pd.read_csv(file_path)
+    else:
+        raise ValueError()
     x = df[x_column_name]
     df[y_column_name] = y(x)
     df[dy_column_name] = dy(x)
@@ -85,32 +89,32 @@ def apply_model(
 
     if save_to_path == file_path:
         pass
-        print("Proceeding will overwrite original data spreadsheet.\n")
+        print(f"Proceeding will overwrite data spreadsheet {file_path}")
         print("\nReply y to proceed.")
         response = input("Anything else will stop spreadsheet creation.\n")
         if response == "y":
             pass
         else:
-            return None
-    df.to_excel(save_to_path, index=False)
+            return df
+    df.to_csv(save_to_path, index=False)
     return df
 
 
-def main():
-    p = Path("/Users/ianbillinge/Documents/kimlab/projects")
-    p = p / "vuv/xanthydrol/fits/2025_06_17_low"
-
-    y, dy, model, bounds = load_model(p)
-    file_path = Path("/Users/ianbillinge/Documents/kimlab/projects/")
-    file_path = file_path / "vuv/xanthydrol/2025-06-17/20250617.xlsx"
-    df = pd.read_excel(file_path)
-    df = apply_model(
-        file_path, y, dy, model, model_path=p, x_column_name="Area"
-    )
-    print(df)
-
-    return
-
-
-if __name__ == "__main__":
-    main()
+#
+# def main():
+#     p = Path("/Users/ianbillinge/Documents/kimlab/projects")
+#     p = p / "vuv/xanthydrol/fits/2025_06_17_low"
+#
+#     y, dy, model, bounds = load_model(p)
+#     file_path = Path("/Users/ianbillinge/Documents/kimlab/projects/")
+#     file_path = file_path / "vuv/xanthydrol/2025-06-17/20250617.xlsx"
+#     df = pd.read_excel(file_path)
+#     df = apply_model(
+#         file_path, y, dy, model, model_path=p, x_column_name="Area"
+#     )
+#     print(df)
+#
+#     return
+# #
+# if __name__ == "__main__":
+#     main()

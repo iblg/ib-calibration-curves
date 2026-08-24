@@ -40,10 +40,26 @@ def calculate_dilution_factor(
 
 
 def calculate_dilution(
-    data: pd.DataFrame, ion: str, column_base_string="standard_concentration_"
-):
-    ion = ion.lower()
-    data["sample_concentration_" + ion] = (
-        data[column_base_string + ion] / data["dilution_factor"]
+    data: pd.DataFrame,
+    analyte: str,
+    column_base_string="standard_concentration_",
+) -> pd.DataFrame:
+    """
+
+    :param data: pd.DataFrame.
+    The data.
+
+    :param analyte: str
+    What to name the new column.
+    By default, the column will be named "sample_concentration_[analyte]"
+    :param column_base_string: str, default "standard_concentration_"
+    What the column you are reading from is called.
+    e.g. if the column in data is called "c_urea", you would pass "c_" to this
+    argument.
+    :return: pd.DataFrame.
+    """
+    analyte = analyte.lower()
+    data["sample_concentration_" + analyte] = (
+        data[column_base_string + analyte] / data["dilution_factor"]
     )
     return data

@@ -3,7 +3,6 @@ import dill
 from pathlib import Path
 import statsmodels.api as sm
 import numpy as np
-import matplotlib.pyplot as plt
 
 
 def identity(x):
@@ -22,6 +21,7 @@ def filter_data(
     x_transformation,
     y_transformation,
     add_X_constant: bool,
+    read_file_kwargs: dict = None,
 ):
     """
     path_in: Path
@@ -46,10 +46,10 @@ def filter_data(
     If True, fit will include y-intercept. If False, fit will be restricted
     to pass through the origin.
     """
-    if path_in.suffix == ".csv":
-        df = pd.read_csv(path_in)
-    elif path_in.suffix == ".xlsx":
-        df = pd.read_excel(path_in)
+    if path_in.suffix.lower() == ".csv":
+        df = pd.read_csv(path_in, **read_file_kwargs)
+    elif path_in.suffix.lower() == ".xlsx":
+        df = pd.read_excel(path_in, **read_file_kwargs)
     else:
         print("Wrong data type")
         return None
@@ -69,7 +69,6 @@ def filter_data(
         # df = df[mask]
 
     y_column = y_transformation(df[y_column])
-    print(df.columns)
     X = x_transformation(df[x_column])
     if add_X_constant:
         X = sm.add_constant(X)
@@ -177,6 +176,7 @@ def linearfit(
     x_range=None,
     y_transformation=identity,
     x_transformation=identity,
+    read_file_kwargs: dict = {},
 ):
     """
     Fit a linear function onto data.
@@ -224,6 +224,7 @@ def linearfit(
         x_transformation,
         y_transformation,
         add_X_constant,
+        read_file_kwargs,
     )
     model = sm.OLS(y, X)
     results = model.fit()
@@ -250,7 +251,7 @@ def linearfit(
 
 
 def save_model(
-    path_out,
+    path_out: Path,
     fit: dict,
     y_unit: str = None,
 ):
@@ -266,7 +267,9 @@ def save_model(
         "model": statsmodels object,
         "x_range": tuple,
         "y_range": tuple,
-    }
+
+    y_unit: str, default None
+    Unit of the y_func.
     """
     func_path = path_out.with_suffix(".y")
     err_path = path_out.with_suffix(".dy")
@@ -320,7 +323,7 @@ def load_model(path_in):
     func_path = path_in.with_suffix(".y")
     err_path = path_in.with_suffix(".dy")
     mod_path = path_in.with_suffix(".model")
-    bounds_path = path_in.with_suffix(".bounds")
+    summary_path = path_in.with_suffix(".txt")
 
     def load(p):
         with open(p, "rb") as infile:
@@ -330,103 +333,108 @@ def load_model(path_in):
     y = load(func_path)
     dy = load(err_path)
     model = load(mod_path)
-    bounds = load(bounds_path)
-    return y, dy, model, bounds
+
+    with open(summary_path, "r") as infile:
+        summary = infile.readlines()
+
+    d = {"y": y, "dy": dy, "model": model, "summary": summary}
+    return d
 
 
-def main():
-    p = Path("/Users/ianbillinge/Documents/kimlab/projects/vuv/xanthydrol/")
-    infile_path = p / "20241211 HPLC Urea-Xan.xlsx"
-
-    # fit models
-    powerlaw_y, powerlaw_dy, powerlaw_model = powerlawfit(infile_path)
-    exp_y, exp_dy, exponential_model = exponentialfit(infile_path)
-    lin_y, lin_dy, linear_model = linearfit(infile_path)
-    print(linear_model.summary())
-
-    lowbounds = (0, 200)
-    highbounds = (100, 100000)
-    lin_low_y, lin_low_dy, linear_low_model = linearfit(
-        infile_path, x_range=lowbounds
-    )
-    lin_high_y, lin_high_dy, linear_high_model = linearfit(
-        infile_path, x_range=highbounds
-    )
-
-    path_out_lin_low = p / "fits" / "2025_06_17_low"
-    save_model(
-        path_out_lin_low,
-        lin_low_y,
-        lin_low_dy,
-        linear_low_model,
-        bounds=lowbounds,
-    )
-
-    path_out_lin_high = p / "fits" / "2025_06_17_high"
-    save_model(
-        path_out_lin_high,
-        lin_high_y,
-        lin_high_dy,
-        linear_high_model,
-        bounds=highbounds,
-    )
-
-    xx = "area"
-    yy = "concentration"
-    df, x, y = filter_data(
-        infile_path,
-        x_column=xx,
-        y_column=yy,
-        x_bounds=None,
-        x_transformation=identity,
-        y_transformation=identity,
-        add_X_constant=True,
-    )
-    df_log, x_log, y_log = filter_data(
-        infile_path,
-        x_column=xx,
-        y_column=yy,
-        x_bounds=None,
-        x_transformation=log10,
-        y_transformation=log10,
-        add_X_constant=True,
-    )
-
-    def plot_results():
-        fig, ax = plt.subplots(nrows=2)
-
-        # Plot
-        x = df[xx]
-        y = df[yy]
-        x1 = np.linspace(x.min(), x.max(), 30)
-        print(x1, lin_y(x1), lin_dy(x1))
-        ax[0].plot(df_log[xx], df_log[yy], "o", label="real data")
-        ax[0].errorbar(x, lin_y(x), yerr=lin_dy(x), label="linear model")
-        ax[0].errorbar(
-            x, lin_low_y(x), yerr=lin_low_dy(x), label="linear low model"
-        )
-        ax[0].errorbar(
-            x, lin_high_y(x), yerr=lin_high_dy(x), label="linear high model"
-        )
-
-        ax[1].plot(x, y, "o", label="real data")
-        ax[1].errorbar(
-            x1,
-            powerlaw_y(x1),
-            yerr=powerlaw_dy(x1),
-            label="power law prediction",
-        )
-        ax[1].errorbar(
-            x1, exp_y(x1), yerr=exp_dy(x1), label="exponential prediction"
-        )
-        [axis.legend() for axis in ax]
-
-        plt.show()
-
-    plot_results()
-
-    return
-
-
-if __name__ == "__main__":
-    main()
+#
+# def main():
+#     p = Path("/Users/ianbillinge/Documents/kimlab/projects/vuv/xanthydrol/")
+#     infile_path = p / "20241211 HPLC Urea-Xan.xlsx"
+#
+#     # fit models
+#     powerlaw_y, powerlaw_dy, powerlaw_model = powerlawfit(infile_path)
+#     exp_y, exp_dy, exponential_model = exponentialfit(infile_path)
+#     lin_y, lin_dy, linear_model = linearfit(infile_path)
+#     print(linear_model.summary())
+#
+#     lowbounds = (0, 200)
+#     highbounds = (100, 100000)
+#     lin_low_y, lin_low_dy, linear_low_model = linearfit(
+#         infile_path, x_range=lowbounds
+#     )
+#     lin_high_y, lin_high_dy, linear_high_model = linearfit(
+#         infile_path, x_range=highbounds
+#     )
+#
+#     path_out_lin_low = p / "fits" / "2025_06_17_low"
+#     save_model(
+#         path_out_lin_low,
+#         lin_low_y,
+#         lin_low_dy,
+#         linear_low_model,
+#         bounds=lowbounds,
+#     )
+#
+#     path_out_lin_high = p / "fits" / "2025_06_17_high"
+#     save_model(
+#         path_out_lin_high,
+#         lin_high_y,
+#         lin_high_dy,
+#         linear_high_model,
+#         bounds=highbounds,
+#     )
+#
+#     xx = "area"
+#     yy = "concentration"
+#     df, x, y = filter_data(
+#         infile_path,
+#         x_column=xx,
+#         y_column=yy,
+#         x_bounds=None,
+#         x_transformation=identity,
+#         y_transformation=identity,
+#         add_X_constant=True,
+#     )
+#     df_log, x_log, y_log = filter_data(
+#         infile_path,
+#         x_column=xx,
+#         y_column=yy,
+#         x_bounds=None,
+#         x_transformation=log10,
+#         y_transformation=log10,
+#         add_X_constant=True,
+#     )
+#
+#     def plot_results():
+#         fig, ax = plt.subplots(nrows=2)
+#
+#         # Plot
+#         x = df[xx]
+#         y = df[yy]
+#         x1 = np.linspace(x.min(), x.max(), 30)
+#         print(x1, lin_y(x1), lin_dy(x1))
+#         ax[0].plot(df_log[xx], df_log[yy], "o", label="real data")
+#         ax[0].errorbar(x, lin_y(x), yerr=lin_dy(x), label="linear model")
+#         ax[0].errorbar(
+#             x, lin_low_y(x), yerr=lin_low_dy(x), label="linear low model"
+#         )
+#         ax[0].errorbar(
+#             x, lin_high_y(x), yerr=lin_high_dy(x), label="linear high model"
+#         )
+#
+#         ax[1].plot(x, y, "o", label="real data")
+#         ax[1].errorbar(
+#             x1,
+#             powerlaw_y(x1),
+#             yerr=powerlaw_dy(x1),
+#             label="power law prediction",
+#         )
+#         ax[1].errorbar(
+#             x1, exp_y(x1), yerr=exp_dy(x1), label="exponential prediction"
+#         )
+#         [axis.legend() for axis in ax]
+#
+#         plt.show()
+#
+#     plot_results()
+#
+#     return
+#
+#
+# if __name__ == "__main__":
+#     main()
